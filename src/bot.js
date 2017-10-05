@@ -32,14 +32,14 @@ function onMessage(session, message) {
 
 function onCommand(session, command) {
   switch (command.content.value) {
-    case 'ping':
-      pong(session)
+    case 'start-rent':
+      donate(session)
       break
-    case 'count':
+    case 'end-rent':
       count(session)
       break
-    case 'donate':
-      donate(session)
+    case 'status':
+      pong(session)
       break
     }
 }
@@ -69,7 +69,7 @@ function onPayment(session, message) {
 // STATES
 
 function welcome(session) {
-  sendMessage(session, `Hello Token!`)
+  sendMessage(session, `Hi! I'm a fair bike 🚲`)
 }
 
 function pong(session) {
@@ -86,17 +86,22 @@ function count(session) {
 function donate(session) {
   // request $1 USD at current exchange rates
   Fiat.fetch().then((toEth) => {
-    session.requestEth(toEth.USD(1))
+    session.requestEth(toEth.EUR(1))
   })
 }
+
+function status(session) {
+  sendMessage(session, `The bike is currently`)
+}
+
 
 // HELPERS
 
 function sendMessage(session, message) {
   let controls = [
-    {type: 'button', label: 'Ping', value: 'ping'},
-    {type: 'button', label: 'Count', value: 'count'},
-    {type: 'button', label: 'Donate', value: 'donate'}
+    {type: 'button', label: 'Start Rent', value: 'start-rent'},
+    {type: 'button', label: 'End Rent', value: 'end-rent'},
+    {type: 'button', label: 'Status', value: 'status'}
   ]
   session.reply(SOFA.Message({
     body: message,
