@@ -14,4 +14,6 @@ ADD src /usr/src/bot/src
 ADD package.json /usr/src/bot/package.json
 WORKDIR /usr/src/bot
 
+EXPOSE 9876
+
 CMD nodemon -L src/bot.js

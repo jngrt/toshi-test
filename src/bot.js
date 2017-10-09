@@ -2,6 +2,8 @@ const Bot = require('./lib/Bot')
 const SOFA = require('sofa-js')
 const Fiat = require('./lib/Fiat')
 
+const http = require('http')
+
 let bot = new Bot()
 
 // ROUTING
@@ -33,13 +35,13 @@ function onMessage(session, message) {
 function onCommand(session, command) {
   switch (command.content.value) {
     case 'start-rent':
-      donate(session)
+      startRentCmd(session)
       break
     case 'end-rent':
-      count(session)
+      endRentCmd(session)
       break
     case 'status':
-      pong(session)
+      stateCmd(session)
       break
     }
 }
@@ -67,7 +69,32 @@ function onPayment(session, message) {
 }
 
 // STATES
+function startRentCmd(session){
 
+  if( getRentalState(session) === 0 ){
+    setRentalState(session, 1);
+    sendMessage(session, 'Your rental period has started');
+  } else {
+    sendMessage(session, 'This bike is being rented by someone else');
+  }
+}
+function endRentCmd(session){
+  if( getRentalState(session) === 1 ){
+    setRentalState(session, 0);
+    sendMessage(session, 'Your rental period has ended');
+  } else {
+    sendMessage(session, 'No one is renting this bike at the moment');
+  }
+}
+function stateCmd(session){
+  sendMessage(session, `This bike is ${getRentalState(session) === 0? "":"not "} available`);
+}
+function getRentalState(session){
+  return session.get('rentalState') || 0;
+}
+function setRentalState(session, newState){
+  session.set('rentalState', newState);
+}
 function welcome(session) {
   sendMessage(session, `Hi! I'm a fair bike 🚲`)
 }
@@ -90,9 +117,6 @@ function donate(session) {
   })
 }
 
-function status(session) {
-  sendMessage(session, `The bike is currently`)
-}
 
 
 // HELPERS
@@ -109,3 +133,13 @@ function sendMessage(session, message) {
     showKeyboard: false,
   }))
 }
+
+// PLACEHOLDER FOR LOCK FUNCTIONALITY
+// implemented for now as webserver, giving back the lock state
+
+http.createServer(function (request, res) {
+  console.log('incoming request');
+  res.setHeader('Content-Type', 'text/html');
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('ok');
+}).listen(9876)
