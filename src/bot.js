@@ -3,8 +3,11 @@ const SOFA = require('sofa-js')
 const Fiat = require('./lib/Fiat')
 
 const http = require('http')
+const fs = require('fs');
+const RentalState = require('./RentalState')
 
 let bot = new Bot()
+let rentalState = new RentalState()
 
 // ROUTING
 
@@ -40,7 +43,7 @@ function onCommand(session, command) {
     case 'end-rent':
       endRentCmd(session)
       break
-    case 'status':
+    case 'rental-state':
       stateCmd(session)
       break
     }
@@ -70,31 +73,32 @@ function onPayment(session, message) {
 
 // STATES
 function startRentCmd(session){
-
-  if( getRentalState(session) === 0 ){
-    setRentalState(session, 1);
+  if( rentalState.available() ) {
+    rentalState.startRent(session);
+    //setRentalState(session, 1);
     sendMessage(session, 'Your rental period has started');
   } else {
     sendMessage(session, 'This bike is being rented by someone else');
   }
 }
 function endRentCmd(session){
-  if( getRentalState(session) === 1 ){
-    setRentalState(session, 0);
+  if( rentalState.amIRenting(session) ){
+    rentalState.endRent(session);
     sendMessage(session, 'Your rental period has ended');
   } else {
-    sendMessage(session, 'No one is renting this bike at the moment');
+    sendMessage(session, 'You are not renting this bike');
   }
 }
 function stateCmd(session){
-  sendMessage(session, `This bike is ${getRentalState(session) === 0? "":"not "} available`);
+  if( rentalState.available() )
+    return sendMessage(session, `This bike is available`);
+
+  if( rentalState.amIRenting( session ) )
+    return sendMessage(session, 'You are renting the bike');
+
+  sendMessage(session, 'The bike is rented out to someone else');
 }
-function getRentalState(session){
-  return session.get('rentalState') || 0;
-}
-function setRentalState(session, newState){
-  session.set('rentalState', newState);
-}
+
 function welcome(session) {
   sendMessage(session, `Hi! I'm a fair bike 🚲`)
 }
@@ -125,7 +129,7 @@ function sendMessage(session, message) {
   let controls = [
     {type: 'button', label: 'Start Rent', value: 'start-rent'},
     {type: 'button', label: 'End Rent', value: 'end-rent'},
-    {type: 'button', label: 'Status', value: 'status'}
+    {type: 'button', label: 'Status', value: 'rental-state'}
   ]
   session.reply(SOFA.Message({
     body: message,
